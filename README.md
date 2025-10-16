@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/banner.png" alt="SSOKOBAN Banner" width="900">
+  <img src="assets/banner.png" alt="SSOKOBAN Banner" width="95%">
 </p>
 
 # 🧠 SSOKOBAN — n8n & Low-code Automation Tutorials
