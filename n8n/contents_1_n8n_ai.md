@@ -1,243 +1,210 @@
-# 🧠 n8n + GPT로 만드는 Daily Calendar Report 자동화 가이드
+<p align="center">
+  <img src="assets/banner.png" alt="SSOKOBAN Banner" width="100%">
+</p>
 
-![thumbnail](./assets/banner.png)
+# 🧠 SSOKOBAN — n8n & Low-Code Automation  
+**콘텐츠 #1: Daily Calendar Analytics & Report Workflow**
 
-## 📋 목차
+![YouTube Badge](https://img.shields.io/badge/YouTube-@SSOKOBAN-red?logo=youtube&style=flat)
+![n8n Badge](https://img.shields.io/badge/n8n-Automation-blue?logo=n8n)
+![OpenAI Badge](https://img.shields.io/badge/OpenAI-GPT--4o-111111?logo=openai)
 
+> 매일 18:00에 Google Calendar의 “오늘 일정”을 수집 → 정규화 → GPT로 분석하여 **HTML 보고서**를 만들고 → **Gmail**로 자동 발송하는 워크플로우입니다.  
+> *Perplexity 가이드 예시처럼 구조화·재현성·출처 통제 원칙을 지키는 설계입니다.*
+
+---
+
+## 📚 목차
 - [개요](#개요)
-- [기존 일정 관리의 문제점](#기존-일정-관리의-문제점)
-- [Daily Calendar Report 워크플로우 소개](#daily-calendar-report-워크플로우-소개)
-- [Node별 구성 및 역할](#node별-구성-및-역할)
+- [워크플로우 구조](#워크플로우-구조)
+- [사전 준비](#사전-준비)
+- [Node별 구성](#node별-구성)
   - [Node 1: Daily Trigger](#node-1-daily-trigger)
   - [Node 2: Set Vars](#node-2-set-vars)
-  - [Node 3: Google Calendar - List Events](#node-3-google-calendar---list-events)
-  - [Node 4: Normalize Events](#node-4-normalize-events)
-  - [Node 5: Analyze Calendar and Generate Report (OpenAI)](#node-5-analyze-calendar-and-generate-report-openai)
-  - [Node 6: Send Report via Gmail](#node-6-send-report-via-gmail)
-- [워크플로우 구조 요약](#워크플로우-구조-요약)
-- [적용 시나리오](#적용-시나리오)
-- [결론](#결론)
+  - [Node 3: Google Calendar — List Events](#node-3-google-calendar--list-events)
+  - [Node 4: Normalize Events (Function)](#node-4-normalize-events-function)
+  - [Node 5: Analyze Calendar & Generate Report (OpenAI)](#node-5-analyze-calendar--generate-report-openai)
+  - [Node 6: Send Report via Gmail (Final)](#node-6-send-report-via-gmail-final)
+- [완성 HTML 리포트 섹션 구성](#완성-html-리포트-섹션-구성)
+- [자주 묻는 질문](#자주-묻는-질문)
+- [Assets 업로드 & 배너 적용](#assets-업로드--배너-적용)
+- [라이선스](#라이선스)
 
 ---
 
 ## 개요
+일정이 많아질수록 “오늘을 객관적으로 돌아보고 개선 포인트를 찾기”가 어렵습니다.  
+본 워크플로우는 **데이터 수집 → 정규화 → 분석 → 배포**를 자동화하여 다음을 제공합니다.
 
-캘린더에 일정이 많아질수록 하루를 객관적으로 되돌아보고 개선 포인트를 찾기 어려워집니다.  
-매일 회의와 집중 시간, 컨텍스트 전환(context switch) 등을 수동으로 정리하는 것은 번거롭고,  
-이 때문에 **일정 관리 자동화**의 수요가 점점 높아지고 있습니다.
-
-이 가이드는 n8n과 OpenAI를 이용해, 매일 18:00에 **자동으로 일정 데이터를 분석하여 HTML 보고서를 생성하고 메일로 발송**하는 방법을 다룹니다.
-
----
-
-## 기존 일정 관리의 문제점
-
-### 일정/회의 관리에서 흔히 발생하는 문제점
-
-**1. 시간 사용에 대한 피드백 부족**  
-- 회의와 Deep Work 시간이 적절히 배분되었는지 알기 어려움  
-- 하루가 바쁘게 지나갔지만 무엇을 했는지 정리되지 않음
-
-**2. 회의의 질적 문제 파악 곤란**  
-- 백투백(Back-to-back) 회의나 안건 없는 미팅을 찾기 어려움
-
-**3. 일정 패턴 분석의 자동화 부재**  
-- 수동 리포트는 번거롭고 재현 불가  
-- 데이터를 모아도 가공이 어려워 실시간 인사이트 도출이 안 됨
+- 🧮 **정량 메트릭**: 총 이벤트 수/시간, 회의·집중 비율, 컨텍스트 스위치, 백투백 등  
+- 🔍 **문제 탐지**: 장시간 미팅, 과다 참석자, 안건 없음, 근무시간 외 이벤트 등  
+- ✅ **성과(Wins)**: 배포/출시/병합/딜리버리 등 긍정 이벤트  
+- 📌 **내일 계획**: 오늘 패턴 기반 제안(집중 블록·버퍼·Agenda-first 등)  
+- 📧 **자동 발송**: 매일 18:00, HTML 보고서를 지정 메일로 전달
 
 ---
 
-## Daily Calendar Report 워크플로우 소개
-
-이 워크플로우는 아래의 6개 노드로 구성됩니다.
-
-[Node 1] Daily Trigger
+## 워크플로우 구조
+[1] Daily Trigger
 ↓
-[Node 2] Set Vars
+[2] Set Vars
 ↓
-[Node 3] Google Calendar - List Events
+[3] Google Calendar — List Events
 ↓
-[Node 4] Normalize Events
+[4] Normalize Events (Function)
 ↓
-[Node 5] Analyze Calendar and Generate Report (OpenAI)
+[5] Analyze Calendar & Generate Report (OpenAI)
 ↓
-[Node 6] Send Report via Gmail ✅
-
-yaml
-코드 복사
-
-매일 18:00에 Google Calendar에서 당일 이벤트를 불러오고,  
-GPT-4(o)를 이용해 일정 데이터를 분석한 후 HTML 리포트를 생성,  
-Gmail로 자동 발송합니다.
+[6] Send Report via Gmail ✅ (Final)
 
 ---
 
-## Node별 구성 및 역할
+## 사전 준비
+- n8n (Self-hosted 또는 Cloud)
+- Google OAuth2 자격(📆 Calendar, ✉️ Gmail)
+- OpenAI API Key (권장: **gpt-4o**)
+- 환경값: `RECIPIENT_EMAIL`, `TIMEZONE` (예: `Asia/Seoul`)
+
+---
+
+## Node별 구성
 
 ### Node 1: Daily Trigger
+매일 **18:00**에 실행됩니다.
 
-**설명**  
-매일 18:00에 워크플로우를 실행하는 스케줄 트리거입니다.
-
-**설정 요약**
-- Interval: Days  
-- Days Between Triggers: 1  
-- Hour: 18  
-- Minute: 00
-
-```text
+**간단 지시문 (n8n AI Builder 복붙용)**
+```
 Add a Schedule Trigger node that runs every day at 18:00 (6 PM). Configure it to execute daily at a specific time.
-Node 2: Set Vars
-설명
-보고서를 수신할 이메일 주소(RECIPIENT_EMAIL)와 기준 시간대(TIMEZONE)를 설정합니다.
+```
 
-예시 값
+**필수 설정**
+- Interval: `Days`
+- Days: `1`
+- Hour: `18`
+- Minute: `00`
 
-RECIPIENT_EMAIL: your@email.com
+---
 
-TIMEZONE: Asia/Seoul
+### Node 2: Set Vars
+보고서 수신자/타임존을 변수로 노출합니다.
 
-text
-코드 복사
-Add a Set node named "Set Vars" that exposes two variables: RECIPIENT_EMAIL and TIMEZONE.
-Node 3: Google Calendar - List Events
-설명
-Google Calendar API를 통해 오늘의 모든 일정을 불러옵니다.
+**간단 지시문**
+```
+Add a Set node named "Set Vars" that exposes two variables: RECIPIENT_EMAIL (string) and TIMEZONE (IANA tz like Asia/Seoul).
+```
 
-중요 설정
+**값 예시**
+- `RECIPIENT_EMAIL`: your@email.com
+- `TIMEZONE`: `Asia/Seoul`
 
-Return All: true
+---
 
-Time Min:
+### Node 3: Google Calendar — List Events
+**오늘 00:00–23:59**(TIMEZONE 기준)의 이벤트를 모두 가져옵니다.
 
-js
-코드 복사
-{{ $now.setTimezone($json.TIMEZONE || $vars.TIMEZONE).startOf('day').toISO() }}
-Time Max:
+**간단 지시문**
+```
+Add a Google Calendar "Get Many" node to fetch all events for today using the TIMEZONE variable for time boundaries. Return all pages.
+```
 
-js
-코드 복사
-{{ $now.setTimezone($json.TIMEZONE || $vars.TIMEZONE).endOf('day').toISO() }}
-Node 4: Normalize Events
-설명
-Google Calendar의 원본 데이터를 GPT가 분석하기 좋은 JSON 구조로 정제합니다.
+**핵심 파라미터**
+- Resource: `Event` / Operation: `Get Many` / Return All: `true`  
+- Time Min:
+```js
+{{ $now.setTimezone($json.TIMEZONE || $vars.TIMEZONE || $env.TIMEZONE).startOf('day').toISO() }}
+```
 
-출력 필드 예시
+---
 
-json
-코드 복사
-{
-  "summary": "회의 제목",
-  "description": "내용",
-  "start": "2025-10-16T09:00:00+09:00",
-  "end": "2025-10-16T10:00:00+09:00",
-  "duration_minutes": 60,
-  "attendee_count": 3,
-  "html_link": "https://calendar.google.com/...",
-  "location": "",
-  "status": "confirmed",
-  "organizer": "홍길동",
-  "all_day": false
-}
-Node 5: Analyze Calendar and Generate Report (OpenAI)
-설명
-GPT-4(o)를 활용하여 이벤트 데이터를 분석하고,
-HTML 리포트 + 메트릭(JSON)을 생성합니다.
+### Node 4: Normalize Events (Function)
+원본 이벤트를 분석 친화 JSON으로 정제합니다.
 
-모델 설정
+**간단 지시문**
+```
+Add a Function node "Normalize Events" that outputs one item with { events, TIMEZONE } where events is an array of normalized objects.
+```
 
-Model: gpt-4o
+```js
+const TZ = $json.TIMEZONE || $vars.TIMEZONE || $env.TIMEZONE || 'UTC';
+const { DateTime } = require('luxon');
 
-Temperature: 0.1
+const normalized = ($input.all().map(i=>i.json)).flat().map(ev=>{
+  const sRaw = ev.start?.dateTime || ev.start?.date;
+  const eRaw = ev.end?.dateTime || ev.end?.date;
+  const allDay = !!ev.start?.date && !ev.start?.dateTime;
+  const s = DateTime.fromISO(sRaw, { zone: TZ });
+  const e = DateTime.fromISO(eRaw, { zone: TZ });
+  const dur = Math.max(0, e.diff(s, 'minutes').minutes);
 
-JSON mode: 가능 시 활성화
+  return {
+    summary: ev.summary || '(no title)',
+    description: ev.description || '',
+    start: s.toISO(),
+    end: e.toISO(),
+    duration_minutes: Math.round(dur),
+    attendee_count: Array.isArray(ev.attendees) ? ev.attendees.length : 0,
+    html_link: ev.htmlLink || '',
+    location: ev.location || '',
+    status: ev.status || '',
+    organizer: ev.organizer?.displayName || ev.organizer?.email || '',
+    all_day: allDay
+  };
+});
 
-User Prompt 예시 (요약)
+return [{ json: { events: normalized, TIMEZONE: TZ } }];
+```
+---
+### Node 5: Analyze Calendar & Generate Report (OpenAI)
+gpt-4o로 분석하여 **HTML + 메트릭(JSON)**을 생성합니다.
 
-javascript
-코드 복사
-You are a daily productivity report generator.
-Use ONLY the provided events data from the input.
-Access events: {{ $('Normalize Events').item.json.events }}
-Access timezone: {{ $('Set Vars').item.json.TIMEZONE }}
-Generate HTML + metrics + problems + wins + tomorrow_plan
-리포트 구조
+**모델 권장값**
+- Model: gpt-4.1 
+- Temperature: 0.1
+- Max Tokens: 4000+
+- JSON mode: 가능 시 활성화
+- User Prompt (요약 번역본 포함)
 
-헤더: 날짜, 총 회의 시간, 집중 시간 등 요약
+```
+You are a daily productivity report generator. Your task is to analyze calendar events and generate a comprehensive daily report.
 
-이벤트 리스트(시간순)
+IMPORTANT RULES:
+1) Use ONLY the provided events data — NO fabrication.
+2) Access events: {{ $('Normalize Events').item.json.events }}
+3) Access timezone: {{ $('Set Vars').item.json.TIMEZONE }}
 
-시간 분석(총 시간, 빈 시간, 가장 바쁜 시간 등)
+Return a single JSON object with:
+- html (full HTML with inline CSS, sections: header/date/stats, chronological events, time analysis, insights, problems, wins, tomorrow_plan)
+- metrics { total_events, total_hours, meeting_count, all_day_events, busiest_hour, free_time_hours }
+- problems[] (e.g., back-to-back, overbooked, missing descriptions)
+- wins[] (e.g., shipped, launched, focused blocks)
+- tomorrow_plan[] (actionable suggestions)
 
-문제점(Back-to-back 회의 등)
+If there are no events, reflect it honestly in both HTML and metrics.
+```
+---
+### Node 6: Send Report via Gmail (Final)
+Node 5의 html을 메일 본문으로 발송합니다. 최종 노드입니다.
 
-Wins/성과
+**간단 지시문**
+```
+Add a Gmail node to send an email with the AI-generated HTML report to RECIPIENT_EMAIL. Subject includes today's date (YYYY-MM-DD). Body uses the `html` field from the previous node.
+```
 
-내일 일정 제안
-
-Node 6: Send Report via Gmail
-설명
-Node 5에서 생성한 HTML 보고서를 이메일로 발송합니다.
-
-설정
-
-To:
-
-text
-코드 복사
+**중요 설정**
+- Resource: Message / Operation: Send
+- To:
+```js
 {{ $env.RECIPIENT_EMAIL || $json.RECIPIENT_EMAIL || $vars.RECIPIENT_EMAIL }}
-Subject:
-
-bash
-코드 복사
+```
+- Subject:
+```js
 Daily Calendar Analytics & Productivity Report – {{ $now.format('YYYY-MM-DD') }}
-Body:
-
-bash
-코드 복사
+```
+- Body:
+```js
 {{ $json.html }}
-HTML: true
+```
+- HTML: true
 
-워크플로우 구조 요약
-Node	이름	역할
-1	Daily Trigger	매일 18시 자동 실행
-2	Set Vars	환경 변수 설정
-3	Google Calendar	일정 불러오기
-4	Normalize Events	데이터 정제
-5	Analyze Calendar (OpenAI)	일정 분석 + HTML 리포트 생성
-6	Gmail	메일 발송 (최종)
 
-적용 시나리오
-🧭 개인 일정 분석 자동화
 
-👥 팀 회의/집중시간 밸런스 리포트
-
-📝 리더/매니저의 일일 회고 자동화
-
-🧠 Context Switching 패턴 파악
-
-🕒 Back-to-back 회의 탐지 및 개선 제안
-
-결론
-이 워크플로우는 “하루 일정 분석 → 리포트 작성 → 발송”의 전 과정을 완전히 자동화합니다.
-매일 반복되는 일정 정리 작업을 자동화함으로써,
-사용자는 데이터 기반의 피드백 루프를 쉽게 확보할 수 있습니다.
-
-핵심 포인트
-✅ 일정 데이터 자동 수집 및 정규화
-
-🤖 GPT를 활용한 메트릭 계산 & 리포트 자동화
-
-✉️ Gmail 자동 발송으로 워크플로우 완결
-
-참고 자료
-n8n 공식 문서
-
-Google Calendar API
-
-OpenAI GPT-4 API
-
-Gmail API
-
-yaml
-코드 복사
