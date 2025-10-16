@@ -3,7 +3,7 @@
 ![SSOKOBAN Banner](https://img.shields.io/badge/YouTube-Subscribe-red?logo=youtube&style=flat)  
 **SSOKOBAN**은 n8n, GPT, Google API, Low-code 플랫폼을 활용한 자동화 워크플로우를 쉽게 따라 할 수 있도록 강의와 예시를 제공하는 채널입니다.
 
-> 📺 YouTube: [SSOKOBAN 채널 바로가기](https://www.youtube.com/@SSOKOBAN)  
+> 📺 YouTube: [SSOKOBAN 채널 바로가기](https://www.youtube.com/channel/UCtwhq7TGtoyywPUkqL393cA)  
 > 🌐 목표: **“개발자도, 비개발자도, 진짜로 돌아가는 자동화를 만든다”**
 
 ---
