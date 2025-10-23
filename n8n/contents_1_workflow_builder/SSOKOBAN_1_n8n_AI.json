@@ -1,0 +1,236 @@
+{
+  "name": "SSOKOBAN_1_n8n_AI",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## GUIDE\n**Prompts**\n- Node.1\nAdd a Schedule Trigger node that runs every day at 18:00 (6 PM). Configure it to execute daily at a specific time. \n- Node.2 \nAdd a Set node named \"Set Vars\" that exposes two variables: RECIPIENT_EMAIL (string) and TIMEZONE (IANA tz like Asia/Seoul). These will be used by downstream nodes. \n- Node.3\nAdd a Google Calendar \"Get Many\" node to fetch all events for today using the TIMEZONE variable for time boundaries. Return all pages. \n- Node.4\nAdd a Function node \"Normalize Events\" that converts raw Google events into a clean JSON array with fields: summary, description, start, end, duration_minutes, attendee_count, html_link, location, status, organizer, all_day. Respect TIMEZONE and output one item with \"events\" array. \n- Node.5\nAdd an OpenAI node using a GPT-4 family model to analyze normalized calendar events and generate a complete HTML daily report + structured metrics (JSON). The node must ONLY use the provided events. No fabrication. Input: the \"events\" array and TIMEZONE from the previous node. Output: a single JSON object with fields { html, metrics, problems, wins, tomorrow_plan } where \"html\" is the final report body. \n- Node.6\nAdd a Gmail node to send an email with the AI-generated HTML report. The email should be sent to the RECIPIENT_EMAIL from the Workflow Configuration. The subject should include today's date in YYYY-MM-DD format. The message body should be the HTML report from the AI analysis node.",
+        "height": 768,
+        "width": 432,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        5344,
+        5984
+      ],
+      "typeVersion": 1,
+      "id": "d25572b1-f1d8-4f7c-b180-095108e9a71f",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 18
+            }
+          ]
+        }
+      },
+      "id": "9e77e9d3-7f5a-4f49-b271-5095c6150bd5",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        5840,
+        6224
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "id-1",
+              "name": "RECIPIENT_EMAIL",
+              "value": "ssokoban@gmail.com",
+              "type": "string"
+            },
+            {
+              "id": "id-2",
+              "name": "TIMEZONE",
+              "value": "Asia/Seoul",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "id": "55e83650-5e9a-4e2a-9f00-d07615a603e1",
+      "name": "Set Vars",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        6064,
+        6224
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "calendar": {
+          "__rl": true,
+          "value": "keymon.lab@gmail.com",
+          "mode": "list",
+          "cachedResultName": "SSOKOBAN"
+        },
+        "returnAll": true,
+        "timeMin": "={{ $now.setZone($('Set Vars').item.json.TIMEZONE).startOf('day').toISO() }}",
+        "timeMax": "={{ $now.setZone($('Set Vars').item.json.TIMEZONE).endOf('day').toISO() }}",
+        "options": {}
+      },
+      "id": "a40fbe62-3842-4565-b28f-34e4ef55cb0d",
+      "name": "Get Today's Events",
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.3,
+      "position": [
+        6288,
+        6224
+      ],
+      "alwaysOutputData": false,
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "QGAAMDF9ytGsQKI8",
+          "name": "Google Calendar account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get timezone from Set Vars node\nconst timezone = $('Set Vars').item.json.TIMEZONE;\n\n// Get all calendar events from previous node\nconst rawEvents = $input.all();\n\n// Normalize each event\nconst normalizedEvents = rawEvents.map(item => {\n  const event = item.json;\n  \n  // Determine if it's an all-day event\n  const isAllDay = !!event.start?.date;\n  \n  // Parse start and end times\n  let start, end;\n  if (isAllDay) {\n    start = event.start?.date;\n    end = event.end?.date;\n  } else {\n    start = event.start?.dateTime || event.start?.date;\n    end = event.end?.dateTime || event.end?.date;\n  }\n  \n  // Calculate duration in minutes\n  let durationMinutes = 0;\n  if (start && end) {\n    const startTime = new Date(start);\n    const endTime = new Date(end);\n    durationMinutes = Math.round((endTime - startTime) / (1000 * 60));\n  }\n  \n  // Count attendees\n  const attendeeCount = event.attendees ? event.attendees.length : 0;\n  \n  return {\n    summary: event.summary || 'No Title',\n    description: event.description || '',\n    start: start || '',\n    end: end || '',\n    duration_minutes: durationMinutes,\n    attendee_count: attendeeCount,\n    html_link: event.htmlLink || '',\n    location: event.location || '',\n    status: event.status || '',\n    organizer: event.organizer?.email || '',\n    all_day: isAllDay\n  };\n});\n\n// Return single item with events array\nreturn [{\n  json: {\n    events: normalizedEvents,\n    timezone: timezone,\n    total_events: normalizedEvents.length\n  }\n}];"
+      },
+      "id": "bf3b8eb2-0aed-4a26-aeaf-77531e889fa3",
+      "name": "Normalize Events",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        6480,
+        6224
+      ]
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4.1",
+          "mode": "id"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=You are an AI assistant that analyzes calendar events and generates comprehensive daily reports.\n\nYour task:\n1. Use ONLY the provided events from the input data. Do not fabricate or assume any events.\n2. Generate a complete HTML report body with professional styling (include inline CSS).\n3. Analyze the day and provide structured metrics (total events, total time spent, meeting breakdown, etc.).\n4. Identify problems or challenges based on the schedule (e.g., back-to-back meetings, long days, conflicts).\n5. Highlight wins and achievements from the day's activities.\n6. Suggest a plan for tomorrow based on today's events and patterns.\n\nInput data:\n- Events: {{ $json.events }}\n- Timezone: {{ $json.timezone }}\n- Total Events: {{ $json.total_events }}\n\nYou must return a JSON object with the following structure:\n{\n  \"html\": \"<complete HTML report body with inline CSS>\",\n  \"metrics\": {\n    \"total_events\": number,\n    \"total_duration_minutes\": number,\n    \"meeting_count\": number,\n    \"all_day_events\": number,\n    \"busiest_time\": \"string\"\n  },\n  \"problems\": [\"array of identified issues or challenges\"],\n  \"wins\": [\"array of achievements or positive highlights\"],\n  \"tomorrow_plan\": \"string with suggestions for tomorrow\"\n}\n\nEnsure the HTML is well-formatted, professional, and includes all event details in a readable format."
+            }
+          ]
+        },
+        "jsonOutput": true,
+        "options": {}
+      },
+      "id": "23746f04-78c4-47a1-8d57-0266c3f05156",
+      "name": "AI Daily Report Generator",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        6624,
+        6224
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "ZaieWegNOmawbSNl",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Set Vars').item.json.RECIPIENT_EMAIL }}",
+        "subject": "={{ 'Daily Calendar Report - ' + $now.setZone($('Set Vars').item.json.TIMEZONE).toFormat('yyyy-MM-dd') }}",
+        "message": "={{ $json.message.content.html }}",
+        "options": {}
+      },
+      "id": "246acca3-0e2e-4942-a2d2-772b5c954238",
+      "name": "Send Daily Report Email",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        6944,
+        6224
+      ],
+      "webhookId": "dbe21b2f-89a8-4d35-9ee0-87b2ae27e1cd",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "HG5Op1sQes13i2sD",
+          "name": "Gmail account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Set Vars",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Vars": {
+      "main": [
+        [
+          {
+            "node": "Get Today's Events",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Today's Events": {
+      "main": [
+        [
+          {
+            "node": "Normalize Events",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Events": {
+      "main": [
+        [
+          {
+            "node": "AI Daily Report Generator",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Daily Report Generator": {
+      "main": [
+        [
+          {
+            "node": "Send Daily Report Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "8316bad9-570a-4a82-b01a-d948906e3546",
+  "meta": {
+    "instanceId": "ae008b0c78221f7eae29a75a21af3113560b7368fb4839b1b2d3ab3103139170"
+  },
+  "id": "DzX4VWRzzA163Rd9",
+  "tags": []
+}
