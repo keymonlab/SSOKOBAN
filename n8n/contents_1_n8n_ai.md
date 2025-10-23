@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/banner.png" alt="SSOKOBAN Banner" width="95%">
+  <img src="../assets/SSOKOBAN_1_n8n_A.I-Cover.jpg" alt="SSOKOBAN Banner" width="100%">
 </p>
 
 # 🧠 SSOKOBAN — n8n & Low-Code Automation  
