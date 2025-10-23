@@ -1,5 +1,7 @@
 <p align="center">
-  <img src="./SSOKOBAN_1_n8n_A.I-Cover.jpg" alt="SSOKOBAN Banner" width="100%">
+  <a href="https://youtu.be/B0Wv9YL82WM">
+    <img src="./SSOKOBAN_1_n8n_A.I-Cover.jpg" alt="SSOKOBAN Banner" width="100%">
+  </a>
 </p>
 
 # 🧠 SSOKOBAN — n8n & Low-Code Automation  
