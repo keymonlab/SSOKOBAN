@@ -7,9 +7,9 @@
 # 🧠 SSOKOBAN — n8n & Low-Code Automation  
 **콘텐츠 #1: Daily Calendar Analytics & Report Workflow**
 
-![YouTube Badge](https://img.shields.io/badge/YouTube-@SSOKOBAN-red?logo=youtube&style=flat)
-![n8n Badge](https://img.shields.io/badge/n8n-Automation-blue?logo=n8n)
-![OpenAI Badge](https://img.shields.io/badge/OpenAI-GPT--4o-111111?logo=openai)
+[![YouTube Badge](https://img.shields.io/badge/YouTube-@SSOKOBAN-red?logo=youtube&style=flat)](https://youtu.be/B0Wv9YL82WM)
+[![n8n Badge](https://img.shields.io/badge/n8n-Automation-blue?logo=n8n)](https://n8n.io)
+[![OpenAI Badge](https://img.shields.io/badge/OpenAI-GPT--4o-111111?logo=openai)](https://platform.openai.com/api-keys)
 
 > 매일 18:00에 Google Calendar의 “오늘 일정”을 수집 → 정규화 → GPT로 분석하여 **HTML 보고서**를 만들고 → **Gmail**로 자동 발송하는 워크플로우입니다.  
 > *Perplexity 가이드 예시처럼 구조화·재현성·출처 통제 원칙을 지키는 설계입니다.*
